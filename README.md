@@ -46,5 +46,5 @@ Google 広告 デマンドジェネレーションキャンペーンの「シン
 
 ## デプロイ
 
-`main` ブランチへの push で GitHub Actions が GitHub Pages へ自動デプロイします
-（`.github/workflows/pages.yml`）。
+GitHub Pages の「Deploy from a branch」で `main` ブランチの `/ (root)` を配信しています。
+`main` へ push すれば数十秒で反映されます。
