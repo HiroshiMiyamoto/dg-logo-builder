@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Google 広告デマンドジェネレーションのシングルイメージ広告に必要な「ロゴ」アセットを、画像生成プロンプトと規定サイズPNGの両方で用意するツール。">
+<title>Demand Gen ロゴアセット ビルダー</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --paper:#F2F4F7;
+  --surface:#FFFFFF;
+  --surface-2:#E9EDF2;
+  --ink:#16222E;
+  --ink-soft:#5C6B7B;
+  --rule:#C9D2DC;
+  --accent:#1A62C9;
+  --accent-soft:#E6EFFC;
+  --ok:#0F7A5E;
+  --warn:#9A5B00;
+  --warn-soft:#FBF0DC;
+  --err:#B4332A;
+  --f-body:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --radius:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#0F1821;
+    --surface:#18242F;
+    --surface-2:#21303D;
+    --ink:#E4EBF2;
+    --ink-soft:#9DAEBE;
+    --rule:#33475A;
+    --accent:#5FA2F5;
+    --accent-soft:#1B3350;
+    --ok:#4FC3A1;
+    --warn:#E3A748;
+    --warn-soft:#332813;
+    --err:#F08076;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0F1821; --surface:#18242F; --surface-2:#21303D;
+  --ink:#E4EBF2; --ink-soft:#9DAEBE; --rule:#33475A;
+  --accent:#5FA2F5; --accent-soft:#1B3350;
+  --ok:#4FC3A1; --warn:#E3A748; --warn-soft:#332813; --err:#F08076;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--f-body); font-size:15px; line-height:1.7;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 16px 72px}
+header.page{margin-bottom:24px}
+h1{font-size:21px;line-height:1.45;margin:0 0 6px}
+.lede{margin:0;color:var(--ink-soft);font-size:13.5px}
+.cols{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:960px){.cols{grid-template-columns:minmax(0,380px) minmax(0,1fr);align-items:start}}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:18px;margin-bottom:18px}
+.card > h2{font-size:13px;letter-spacing:.06em;margin:0 0 14px;color:var(--ink-soft);text-transform:uppercase;font-weight:700}
+label{display:block;font-size:12.5px;font-weight:700;margin:0 0 5px}
+.hint{font-size:11.5px;color:var(--ink-soft);font-weight:400;line-height:1.6;margin:4px 0 0}
+input[type=text],select,textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:7px;
+  background:var(--surface);color:var(--ink);font-family:inherit;font-size:14px;
+}
+textarea{resize:vertical;min-height:62px}
+input[type=text]:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.field{margin-bottom:14px}
+.row{display:flex;gap:10px;align-items:center}
+.row > *{min-width:0}
+input[type=range]{flex:1;accent-color:var(--accent)}
+input[type=color]{width:42px;height:34px;padding:2px;border:1px solid var(--rule);border-radius:7px;background:var(--surface);cursor:pointer}
+.val{font-family:var(--f-mono);font-size:13px;min-width:46px;text-align:right;color:var(--ink-soft)}
+button{
+  font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+  border:1px solid var(--rule);background:var(--surface-2);color:var(--ink);
+  padding:8px 14px;border-radius:7px;
+}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{filter:brightness(1.08)}
+button:disabled{opacity:.45;cursor:not-allowed}
+/* ---- dropzone ---- */
+#drop{
+  border:2px dashed var(--rule);border-radius:var(--radius);padding:26px 16px;text-align:center;
+  background:var(--surface-2);cursor:pointer;transition:border-color .15s,background .15s;
+}
+#drop:hover,#drop.over{border-color:var(--accent);background:var(--accent-soft)}
+#drop p{margin:0;font-size:13px;color:var(--ink-soft)}
+#drop strong{display:block;color:var(--ink);font-size:14px;margin-bottom:4px}
+#srcPreview{margin-top:14px;display:none}
+#srcPreview.on{display:block}
+.thumb{
+  display:flex;align-items:center;justify-content:center;height:140px;border-radius:8px;
+  border:1px solid var(--rule);
+  background-color:#fff;
+  background-image:linear-gradient(45deg,#e2e6ea 25%,transparent 25%),linear-gradient(-45deg,#e2e6ea 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e6ea 75%),linear-gradient(-45deg,transparent 75%,#e2e6ea 75%);
+  background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;
+}
+.thumb img{max-width:92%;max-height:92%;object-fit:contain}
+/* ---- facts ---- */
+dl.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:14px 0 0;font-size:12.5px}
+dl.facts dt{color:var(--ink-soft)}
+dl.facts dd{margin:0;font-family:var(--f-mono);font-size:12px;word-break:break-all}
+.swatches{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
+.sw{width:17px;height:17px;border-radius:4px;border:1px solid var(--rule)}
+/* ---- notices ---- */
+.notice{border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.65;margin:12px 0 0;border:1px solid}
+.notice.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--ink)}
+.notice.info{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.notice strong{display:block;margin-bottom:2px}
+/* ---- spec table ---- */
+table.spec{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+table.spec th,table.spec td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+table.spec th{color:var(--ink-soft);font-weight:500;white-space:nowrap;width:40%}
+table.spec td{font-family:var(--f-mono);font-size:12px}
+.badge{display:inline-block;font-family:var(--f-body);font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:6px}
+.badge.ok{background:var(--ok);color:#fff}
+.badge.ng{background:var(--err);color:#fff}
+.badge.na{background:var(--surface-2);color:var(--ink-soft)}
+/* ---- output canvas ---- */
+.outwrap{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+#outCanvas{
+  width:240px;height:240px;border-radius:8px;border:1px solid var(--rule);
+  background-color:#fff;
+  background-image:linear-gradient(45deg,#e2e6ea 25%,transparent 25%),linear-gradient(-45deg,#e2e6ea 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e6ea 75%),linear-gradient(-45deg,transparent 75%,#e2e6ea 75%);
+  background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;
+}
+.outmeta{flex:1;min-width:220px}
+/* ---- tabs + prompt ---- */
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tab{font-size:12.5px;font-weight:700;padding:6px 13px;border-radius:999px;border:1px solid var(--rule);background:var(--surface-2);color:var(--ink-soft);cursor:pointer}
+.tab[aria-selected=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+pre.prompt{
+  margin:0;padding:14px;background:var(--surface-2);border:1px solid var(--rule);border-radius:8px;
+  font-family:var(--f-mono);font-size:11.5px;line-height:1.72;white-space:pre-wrap;word-break:break-word;
+  max-height:460px;overflow:auto;
+}
+.promptbar{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.copied{font-size:12px;color:var(--ok);font-weight:700;opacity:0;transition:opacity .2s}
+.copied.on{opacity:1}
+ol.steps{margin:0;padding-left:1.25em;font-size:12.5px;line-height:1.8}
+ol.steps li{margin-bottom:5px}
+ol.steps code{font-family:var(--f-mono);font-size:11.5px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.empty{color:var(--ink-soft);font-size:13px;text-align:center;padding:32px 10px}
+footer.page{margin-top:28px;font-size:11.5px;color:var(--ink-soft);line-height:1.8;border-top:1px solid var(--rule);padding-top:14px}
+footer.page a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="page">
+  <h1>Demand Gen ロゴアセット ビルダー</h1>
+  <p class="lede">Google 広告 デマンドジェネレーション「シングルイメージ広告」のロゴ（1:1 / 1200×1200px）を、<strong>規定サイズPNGの書き出し</strong>と<strong>ChatGPT Images 用プロンプト</strong>の両方で用意します。画像はブラウザ内だけで処理され、どこにも送信されません。</p>
+</header>
+
+<div class="cols">
+
+  <!-- ========== 左カラム：入力 ========== -->
+  <div>
+    <section class="card">
+      <h2>1. 元画像</h2>
+      <div id="drop" tabindex="0" role="button" aria-label="画像ファイルを選択">
+        <p><strong>画像をドロップ / クリックして選択</strong>PNG・JPG・WebP・GIF・SVG</p>
+      </div>
+      <input type="file" id="file" accept="image/*" hidden>
+
+      <div id="srcPreview">
+        <div class="thumb"><img id="srcImg" alt="アップロードしたロゴ画像のプレビュー"></div>
+        <dl class="facts">
+          <dt>ファイル</dt><dd id="fName">—</dd>
+          <dt>実寸</dt><dd id="fSize">—</dd>
+          <dt>比率</dt><dd id="fRatio">—</dd>
+          <dt>透過</dt><dd id="fAlpha">—</dd>
+          <dt>余白</dt><dd id="fPad">—</dd>
+          <dt>主要色</dt><dd><div class="swatches" id="fColors"></div></dd>
+        </dl>
+        <div id="srcNotice"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. 設定</h2>
+
+      <div class="field">
+        <label for="brand">ブランド名 / サービス名</label>
+        <input type="text" id="brand" placeholder="例：リードプラス株式会社">
+      </div>
+
+      <div class="field">
+        <label for="logoType">ロゴの種類</label>
+        <select id="logoType">
+          <option value="combination">組み合わせ（シンボル＋文字）</option>
+          <option value="symbol">シンボルマークのみ（図形）</option>
+          <option value="wordmark">ワードマークのみ（文字）</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="bgMode">背景</label>
+        <select id="bgMode">
+          <option value="white">白（#FFFFFF）— 推奨</option>
+          <option value="custom">指定色</option>
+          <option value="keep">元画像の背景をそのまま使う</option>
+          <option value="transparent">透過（PNGのアルファを残す）</option>
+        </select>
+        <div class="row" id="bgColorRow" style="margin-top:8px;display:none">
+          <input type="color" id="bgColor" value="#FFFFFF" aria-label="背景色">
+          <span class="val" id="bgColorVal">#FFFFFF</span>
+        </div>
+        <p class="hint">透過PNGは配信面によって白・黒どちらの背景にも載るため、ロゴが見えなくなる事故があります。迷ったら白を選んでください。</p>
+      </div>
+
+      <div class="field">
+        <label for="margin">セーフマージン（四辺の余白）</label>
+        <div class="row">
+          <input type="range" id="margin" min="0" max="25" step="1" value="12">
+          <span class="val" id="marginVal">12%</span>
+        </div>
+        <p class="hint">ロゴの実コンテンツ部分を基準に、上下左右へ均等に余白を取ります。10〜15% が無難です。</p>
+      </div>
+
+      <div class="field">
+        <label for="fidelity">生成AIに許す加工の範囲</label>
+        <select id="fidelity">
+          <option value="strict">完全忠実：配置と余白だけ整える（推奨）</option>
+          <option value="cleanup">軽い清書：にじみ・ノイズ・圧縮劣化だけ除去</option>
+          <option value="bg">背景のみ装飾：ロゴ本体は不変、背景だけ指定どおりに作る</option>
+        </select>
+        <p class="hint">ロゴは商標です。形・字形・色が変わると審査とブランド管理の両方で問題になるため、既定では「描き直さない」指示になります。</p>
+      </div>
+
+      <div class="field">
+        <label for="notes">補足メモ（任意）</label>
+        <textarea id="notes" placeholder="例：シンボルの赤は必ず #D32F2F で。英字は小文字のまま。"></textarea>
+      </div>
+    </section>
+  </div>
+
+  <!-- ========== 右カラム：出力 ========== -->
+  <div>
+    <section class="card">
+      <h2>3. 規定サイズPNGの書き出し</h2>
+      <div id="outEmpty" class="empty">元画像をアップロードすると、1200×1200px のロゴアセットがここに生成されます。</div>
+      <div id="outBody" hidden>
+        <div class="outwrap">
+          <canvas id="outCanvas" width="1200" height="1200" aria-label="生成された1200×1200のロゴアセット"></canvas>
+          <div class="outmeta">
+            <table class="spec">
+              <tbody>
+                <tr><th>アスペクト比</th><td>1:1 <span class="badge ok">適合</span></td></tr>
+                <tr><th>出力サイズ</th><td>1200 × 1200 px <span class="badge ok">推奨値</span></td></tr>
+                <tr><th>形式</th><td>PNG <span class="badge ok">対応</span></td></tr>
+                <tr><th>ファイルサイズ</th><td id="outBytes">—</td></tr>
+                <tr><th>元画像の解像度</th><td id="outSrcRes">—</td></tr>
+              </tbody>
+            </table>
+            <div class="promptbar">
+              <button class="primary" id="dlBtn">PNG をダウンロード</button>
+            </div>
+            <div id="outNotice"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>4. ChatGPT Images 用プロンプト</h2>
+      <div class="tabs" role="tablist">
+        <button class="tab" id="tab-en" role="tab" aria-selected="true" aria-controls="promptBox">English（推奨）</button>
+        <button class="tab" id="tab-ja" role="tab" aria-selected="false" aria-controls="promptBox">日本語</button>
+      </div>
+      <pre class="prompt" id="promptBox">元画像をアップロードし、設定を入力するとプロンプトが生成されます。</pre>
+      <div class="promptbar">
+        <button class="primary" id="copyBtn" disabled>プロンプトをコピー</button>
+        <span class="copied" id="copied">コピーしました</span>
+      </div>
+      <div class="notice info">
+        <strong>使い方</strong>
+        ChatGPT のチャットに<b>元のロゴ画像を添付した上で</b>、このプロンプトを貼り付けてください。画像を添付せずに実行すると、ロゴが一から創作されてしまいます。
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5. 入稿までの手順</h2>
+      <ol class="steps">
+        <li>上の <strong>「PNG をダウンロード」</strong> で足りるなら、それが最も確実です。形・色が一切変わらないため、商標面のリスクがありません。</li>
+        <li>背景の質感づくりなど加工が必要な場合のみ、プロンプトを ChatGPT Images で実行します。出力は <code>1024×1024</code> が上限のため、<strong>必ず 1200×1200 にリサイズ</strong>してから入稿してください。</li>
+        <li>生成結果は <strong>元のロゴと重ねて確認</strong>します。字形・線の太さ・色が1pxでもずれていたら不採用にしてください。</li>
+        <li>最終ファイルは <code>PNG</code> / <code>1:1</code> / <code>1200×1200px</code> / <code>5,120KB 以下</code>であることを確認して入稿します。</li>
+      </ol>
+    </section>
+  </div>
+</div>
+
+<footer class="page">
+  仕様の出典：<a href="https://support.google.com/google-ads/answer/17091672?hl=ja" target="_blank" rel="noopener">デマンド ジェネレーション キャンペーンの仕様とフォーマットの要件（Google 広告ヘルプ）</a>。ロゴは 1:1 必須／推奨 1200×1200px（最小 144×144px）／JPG・PNG・静止GIF／最大 5,120KB。仕様は変更されることがあるため、入稿前に最新のヘルプをご確認ください。
+</footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===================== 状態 ===================== */
+var S = {
+  img:null, fileName:"", fileType:"", analysis:null, lang:"en", outBlob:null
+};
+
+var $ = function(id){ return document.getElementById(id); };
+
+/* ===================== ユーティリティ ===================== */
+function gcd(a,b){ while(b){ var t=b; b=a%b; a=t; } return a; }
+function ratioLabel(w,h){
+  var g = gcd(w,h) || 1;
+  var a = w/g, b = h/g;
+  if(a > 40 || b > 40){ return (w/h).toFixed(2) + ":1"; }
+  return a + ":" + b;
+}
+function hex(r,g,b){
+  return "#" + [r,g,b].map(function(v){
+    return ("0" + Math.max(0,Math.min(255,Math.round(v))).toString(16)).slice(-2);
+  }).join("").toUpperCase();
+}
+function fmtBytes(n){
+  if(n < 1024) return n + " B";
+  if(n < 1024*1024) return (n/1024).toFixed(1) + " KB";
+  return (n/1024/1024).toFixed(2) + " MB";
+}
+function dist(a,b){
+  var dr=a[0]-b[0], dg=a[1]-b[1], db=a[2]-b[2];
+  return Math.sqrt(dr*dr+dg*dg+db*db);
+}
+function esc(s){ return String(s==null?"":s); }
+
+/* ===================== 画像解析 ===================== */
+function analyze(img){
+  var MAX = 360;
+  var nw = img.naturalWidth, nh = img.naturalHeight;
+  if(!nw || !nh) return null;
+  var k = Math.min(1, MAX/Math.max(nw,nh));
+  var w = Math.max(1, Math.round(nw*k));
+  var h = Math.max(1, Math.round(nh*k));
+
+  var c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  var ctx = c.getContext("2d", {willReadFrequently:true});
+  ctx.drawImage(img, 0, 0, w, h);
+
+  var data;
+  try { data = ctx.getImageData(0,0,w,h).data; }
+  catch(e){ return null; }
+
+  var px = function(x,y){
+    var i = (y*w + x) * 4;
+    return [data[i], data[i+1], data[i+2], data[i+3]];
+  };
+
+  /* --- 背景色の推定：四隅の 3x3 平均 --- */
+  var corners = [[0,0],[w-1,0],[0,h-1],[w-1,h-1]];
+  var sum=[0,0,0,0], n=0;
+  for(var ci=0; ci<corners.length; ci++){
+    for(var dy=0; dy<3; dy++) for(var dx=0; dx<3; dx++){
+      var x = Math.min(w-1, Math.max(0, corners[ci][0] + (corners[ci][0]===0?dx:-dx)));
+      var y = Math.min(h-1, Math.max(0, corners[ci][1] + (corners[ci][1]===0?dy:-dy)));
+      var p = px(x,y);
+      sum[0]+=p[0]; sum[1]+=p[1]; sum[2]+=p[2]; sum[3]+=p[3]; n++;
+    }
+  }
+  var bg = [sum[0]/n, sum[1]/n, sum[2]/n, sum[3]/n];
+  var bgTransparent = bg[3] < 24;
+
+  /* --- 透過の有無 --- */
+  var hasAlpha = false;
+  for(var i=3; i<data.length; i+=4){ if(data[i] < 250){ hasAlpha = true; break; } }
+
+  /* --- コンテンツのバウンディングボックス --- */
+  var minX=w, minY=h, maxX=-1, maxY=-1;
+  var THRESH = 34;
+  for(var y2=0; y2<h; y2++){
+    for(var x2=0; x2<w; x2++){
+      var q = px(x2,y2);
+      var solid;
+      if(bgTransparent){ solid = q[3] > 24; }
+      else { solid = q[3] > 24 && dist(q, bg) > THRESH; }
+      if(solid){
+        if(x2<minX) minX=x2; if(x2>maxX) maxX=x2;
+        if(y2<minY) minY=y2; if(y2>maxY) maxY=y2;
+      }
+    }
+  }
+  var bbox;
+  if(maxX < 0){
+    bbox = {x:0, y:0, w:nw, h:nh, full:true};
+  } else {
+    var inv = 1/k;
+    var bx = Math.max(0, Math.floor(minX*inv));
+    var by = Math.max(0, Math.floor(minY*inv));
+    var bw = Math.min(nw-bx, Math.ceil((maxX-minX+1)*inv));
+    var bh = Math.min(nh-by, Math.ceil((maxY-minY+1)*inv));
+    bbox = {x:bx, y:by, w:Math.max(1,bw), h:Math.max(1,bh), full:false};
+  }
+  var padPct = Math.round((1 - (bbox.w*bbox.h)/(nw*nh)) * 100);
+
+  /* --- 主要色（12bit 量子化 → 上位を平均色に戻す） --- */
+  var buckets = {};
+  for(var y3=0; y3<h; y3++){
+    for(var x3=0; x3<w; x3++){
+      var p3 = px(x3,y3);
+      if(p3[3] < 128) continue;
+      if(!bgTransparent && dist(p3,bg) <= THRESH) continue;
+      var key = ((p3[0]>>4)<<8) | ((p3[1]>>4)<<4) | (p3[2]>>4);
+      var b2 = buckets[key];
+      if(!b2){ b2 = buckets[key] = [0,0,0,0]; }
+      b2[0]+=p3[0]; b2[1]+=p3[1]; b2[2]+=p3[2]; b2[3]++;
+    }
+  }
+  var list = [];
+  for(var kk in buckets){
+    var b3 = buckets[kk];
+    list.push({c:[b3[0]/b3[3], b3[1]/b3[3], b3[2]/b3[3]], n:b3[3]});
+  }
+  list.sort(function(a,b4){ return b4.n - a.n; });
+
+  var colors = [];
+  for(var li=0; li<list.length && colors.length<5; li++){
+    var cand = list[li].c, dup = false;
+    for(var mi=0; mi<colors.length; mi++){
+      if(dist(cand, colors[mi].rgb) < 44){ dup = true; break; }
+    }
+    if(!dup) colors.push({rgb:cand, hex:hex(cand[0],cand[1],cand[2])});
+  }
+
+  return {
+    w:nw, h:nh, ratio:ratioLabel(nw,nh), hasAlpha:hasAlpha,
+    bgTransparent:bgTransparent, bgHex:hex(bg[0],bg[1],bg[2]),
+    bbox:bbox, padPct:padPct, colors:colors
+  };
+}
+
+/* ===================== 元画像パネル ===================== */
+function renderSource(){
+  var a = S.analysis;
+  $("srcPreview").className = "on";
+  $("fName").textContent = S.fileName;
+  $("srcImg").src = S.img.src;
+
+  if(!a){
+    $("fSize").textContent = S.img.naturalWidth + " × " + S.img.naturalHeight + " px";
+    $("fRatio").textContent = "—"; $("fAlpha").textContent = "—";
+    $("fPad").textContent = "—"; $("fColors").innerHTML = "";
+    return;
+  }
+  $("fSize").textContent = a.w + " × " + a.h + " px";
+  $("fRatio").textContent = a.ratio + (a.w === a.h ? "（正方形）" : "");
+  $("fAlpha").textContent = a.hasAlpha ? "あり" : "なし（背景 " + a.bgHex + "）";
+  $("fPad").textContent = a.bbox.full ? "判定不可" : "約 " + a.padPct + "%";
+  $("fColors").innerHTML = a.colors.map(function(c){
+    return '<span class="sw" style="background:' + c.hex + '" title="' + c.hex + '"></span>';
+  }).join("") + (a.colors.length ? '<span style="font-size:11px;color:var(--ink-soft);margin-left:4px">' + a.colors.map(function(c){return c.hex;}).join(" ") + "</span>" : "");
+
+  /* 警告 */
+  var notes = [];
+  var minSide = Math.min(a.w, a.h);
+  if(minSide < 144){
+    notes.push(['warn','解像度が不足しています',
+      '短辺 ' + minSide + 'px は、ロゴの最小要件 144×144px を下回ります。1200×1200 に引き伸ばすと必ず劣化します。より大きな元データ（できればSVGやAI形式）を用意してください。']);
+  } else if(minSide < 600){
+    notes.push(['warn','解像度に余裕がありません',
+      '短辺 ' + minSide + 'px です。1200×1200 に拡大するとエッジが甘くなる可能性があります。等倍以上の元データが望ましいです。']);
+  }
+  if(S.fileType === "image/svg+xml"){
+    notes.push(['info','SVG を読み込みました',
+      'ベクターのため拡大しても劣化しません。ただし外部フォントを参照している SVG は字形が崩れることがあるため、書き出し結果を必ず目視で確認してください。']);
+  }
+  $("srcNotice").innerHTML = notes.map(function(nn){
+    return '<div class="notice ' + nn[0] + '"><strong>' + nn[1] + '</strong>' + nn[2] + '</div>';
+  }).join("");
+}
+
+/* ===================== 1200×1200 書き出し ===================== */
+var SIZE = 1200;
+
+function bgFill(){
+  var mode = $("bgMode").value;
+  if(mode === "white") return "#FFFFFF";
+  if(mode === "custom") return $("bgColor").value.toUpperCase();
+  return null; /* keep / transparent */
+}
+
+function renderOutput(){
+  if(!S.img) return;
+  $("outEmpty").hidden = true;
+  $("outBody").hidden = false;
+
+  var cv = $("outCanvas");
+  var ctx = cv.getContext("2d");
+  ctx.clearRect(0,0,SIZE,SIZE);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  var mode = $("bgMode").value;
+  var a = S.analysis;
+  var m = parseInt($("margin").value, 10) / 100;
+
+  if(mode === "keep"){
+    /* 元画像をそのまま正方形に収める（元の余白ごと） */
+    var k0 = Math.min(SIZE/S.img.naturalWidth, SIZE/S.img.naturalHeight);
+    var dw0 = S.img.naturalWidth*k0, dh0 = S.img.naturalHeight*k0;
+    if(a && !a.bgTransparent){ ctx.fillStyle = a.bgHex; ctx.fillRect(0,0,SIZE,SIZE); }
+    ctx.drawImage(S.img, (SIZE-dw0)/2, (SIZE-dh0)/2, dw0, dh0);
+  } else {
+    var fill = bgFill();
+    if(fill){ ctx.fillStyle = fill; ctx.fillRect(0,0,SIZE,SIZE); }
+    var box = (a && !a.bbox.full) ? a.bbox : {x:0, y:0, w:S.img.naturalWidth, h:S.img.naturalHeight};
+    var safe = SIZE * (1 - 2*m);
+    var k = Math.min(safe/box.w, safe/box.h);
+    var dw = box.w*k, dh = box.h*k;
+    ctx.drawImage(S.img, box.x, box.y, box.w, box.h, (SIZE-dw)/2, (SIZE-dh)/2, dw, dh);
+  }
+
+  /* ファイルサイズを測る */
+  $("outSrcRes").textContent = S.img.naturalWidth + " × " + S.img.naturalHeight + " px";
+  cv.toBlob(function(blob){
+    S.outBlob = blob;
+    if(!blob){ $("outBytes").textContent = "—"; return; }
+    var over = blob.size > 5120*1024;
+    $("outBytes").innerHTML = fmtBytes(blob.size) +
+      ' <span class="badge ' + (over ? "ng" : "ok") + '">' + (over ? "上限超過" : "5,120KB以下") + "</span>";
+  }, "image/png");
+
+  var on = [];
+  if(mode === "transparent"){
+    on.push('<div class="notice warn"><strong>透過PNGで書き出しています</strong>配信面の背景色によってはロゴが視認できなくなります。入稿前に、白背景と黒背景の両方に載せて確認してください。</div>');
+  }
+  if(mode === "keep" && S.analysis && S.analysis.w !== S.analysis.h){
+    on.push('<div class="notice info"><strong>元の余白を維持しています</strong>正方形ではない元画像のため、上下または左右に背景色の帯が入ります。余白を均等にしたい場合は「白」または「指定色」を選んでください。</div>');
+  }
+  $("outNotice").innerHTML = on.join("");
+}
+
+/* ===================== プロンプト生成 ===================== */
+var TYPE_EN = {
+  combination:"combination mark (a graphic symbol together with the brand name as lettering)",
+  symbol:"symbol mark only (a graphic icon, no lettering)",
+  wordmark:"wordmark only (the brand name set as custom lettering, no separate icon)"
+};
+var TYPE_JA = {
+  combination:"シンボルと文字を組み合わせたロゴ",
+  symbol:"シンボルマークのみ（文字なし）",
+  wordmark:"ワードマークのみ（文字だけで構成）"
+};
+
+function bgDescEn(){
+  var mode = $("bgMode").value;
+  if(mode === "white") return "pure flat white (#FFFFFF)";
+  if(mode === "custom") return "flat solid " + $("bgColor").value.toUpperCase();
+  if(mode === "transparent") return "fully transparent (alpha channel preserved, no background pixels)";
+  return "the same flat background color as the attached image" + (S.analysis && !S.analysis.bgTransparent ? " (" + S.analysis.bgHex + ")" : "");
+}
+function bgDescJa(){
+  var mode = $("bgMode").value;
+  if(mode === "white") return "完全な白（#FFFFFF）のベタ塗り";
+  if(mode === "custom") return $("bgColor").value.toUpperCase() + " のベタ塗り";
+  if(mode === "transparent") return "完全な透過（アルファチャンネルを保持し、背景ピクセルを置かない）";
+  return "添付画像と同じ背景色のベタ塗り" + (S.analysis && !S.analysis.bgTransparent ? "（" + S.analysis.bgHex + "）" : "");
+}
+
+function buildEn(){
+  var a = S.analysis;
+  var m = parseInt($("margin").value, 10);
+  var fid = $("fidelity").value;
+  var type = $("logoType").value;
+  var brand = $("brand").value.trim();
+  var notes = $("notes").value.trim();
+
+  var L = [];
+  L.push("Reformat the ATTACHED logo image into a square logo asset for a Google Ads Demand Gen single image ad.");
+  L.push("");
+  L.push("## Absolute constraints — never violate these");
+  L.push("- Reproduce the attached logo EXACTLY as it is. Do not redraw, restyle, re-letter, simplify, modernise or reinterpret it.");
+  L.push("- Preserve the exact shapes, letterforms, stroke weights, spacing, proportions and colors of the original.");
+  if(type === "wordmark" || type === "combination"){
+    L.push("- Do not re-typeset the lettering. Do not substitute a similar font. Do not change capitalisation, spelling, spacing or language of any text.");
+  }
+  L.push("- Do not add or remove any element, text, tagline, symbol or registered-mark glyph.");
+  L.push("- No drop shadow, reflection, bevel, emboss, outer glow, 3D extrusion, gradient overlay, outline, stroke, frame or border.");
+  L.push("- Do not place the logo on a mockup, device, product, sign, business card or photographic scene.");
+  L.push("- No watermark, no signature, no caption, no decorative background graphics.");
+  if(fid === "strict"){
+    L.push("- This is a placement and framing task only. The logo artwork itself must come through pixel-faithful.");
+  } else if(fid === "cleanup"){
+    L.push("- You may remove JPEG artifacts, noise and edge fringing, and re-sharpen the existing edges. You may NOT change any shape, letterform or color value while doing so.");
+  } else {
+    L.push("- You may design the BACKGROUND as specified below. The logo artwork itself must stay pixel-faithful and untouched.");
+  }
+  L.push("");
+  L.push("## Output specification");
+  L.push("- Aspect ratio: exactly 1:1 (square). Render at 1024x1024 px.");
+  L.push("- The logo is centered both horizontally and vertically on the square canvas.");
+  L.push("- Clear space: leave an even margin of about " + m + "% of the canvas on all four sides, so the logo occupies roughly the central " + (100 - 2*m) + "%.");
+  L.push("- Background: " + bgDescEn() + ". Flat and even across the whole canvas — no texture, no vignette, no gradient, no pattern.");
+  L.push("- The logo stays fully inside the canvas. Nothing is cropped or bleeds off the edge.");
+  L.push("- Crisp edges, no blur, no noise, no compression artifacts.");
+  L.push("");
+  L.push("## Reference information from the source file");
+  if(brand) L.push("- Brand: " + brand);
+  L.push("- Logo type: " + TYPE_EN[type]);
+  if(a){
+    L.push("- Source dimensions: " + a.w + "x" + a.h + " px (aspect ratio " + a.ratio + ")");
+    L.push("- Source background: " + (a.bgTransparent ? "transparent" : a.bgHex));
+    if(a.colors.length){
+      L.push("- Colors that must be reproduced exactly: " + a.colors.map(function(c){return c.hex;}).join(", "));
+    }
+  }
+  if(notes){
+    L.push("");
+    L.push("## Additional brand requirements");
+    L.push(notes);
+  }
+  L.push("");
+  L.push("## After generation");
+  L.push("- Resize the result to exactly 1200x1200 px and export as PNG under 5 MB.");
+  L.push("- Overlay the result on the original logo and verify that every shape, letterform and color matches. If anything differs, regenerate.");
+  return L.join("\n");
+}
+
+function buildJa(){
+  var a = S.analysis;
+  var m = parseInt($("margin").value, 10);
+  var fid = $("fidelity").value;
+  var type = $("logoType").value;
+  var brand = $("brand").value.trim();
+  var notes = $("notes").value.trim();
+
+  var L = [];
+  L.push("添付したロゴ画像を、Google 広告デマンドジェネレーションのシングルイメージ広告用「ロゴ」アセットとして、正方形に整えてください。");
+  L.push("");
+  L.push("## 絶対に守る条件");
+  L.push("- 添付画像のロゴをそのまま忠実に再現すること。描き直し・作り直し・簡略化・現代風へのアレンジは一切禁止。");
+  L.push("- 形状、字形、線の太さ、字間、縦横比、色をすべて元のまま維持すること。");
+  if(type === "wordmark" || type === "combination"){
+    L.push("- 文字部分を別のフォントで組み直さないこと。似たフォントへの置き換え、大文字小文字・綴り・字間・言語の変更も禁止。");
+  }
+  L.push("- 要素、文字、タグライン、記号、®や™などを追加・削除しないこと。");
+  L.push("- 影、反射、ベベル、エンボス、グロー、3D化、グラデーションの追加、縁取り、枠線を付けないこと。");
+  L.push("- モックアップ、デバイス、商品、看板、名刺、写真的な背景の上に置かないこと。");
+  L.push("- 透かし、署名、キャプション、装飾グラフィックを入れないこと。");
+  if(fid === "strict"){
+    L.push("- これは「配置と余白を整えるだけ」の作業です。ロゴ本体はピクセル単位で元画像どおりにしてください。");
+  } else if(fid === "cleanup"){
+    L.push("- JPEG由来のノイズ、にじみ、輪郭の色ズレの除去と、既存のエッジの再シャープ化のみ許可します。その過程でも形・字形・色の数値を変えてはいけません。");
+  } else {
+    L.push("- 背景のみ、下記の指定に沿って作ってよいものとします。ロゴ本体はピクセル単位で元画像どおりに維持してください。");
+  }
+  L.push("");
+  L.push("## 出力仕様");
+  L.push("- アスペクト比：正確に 1:1（正方形）。1024×1024px で出力。");
+  L.push("- ロゴは正方形キャンバスの上下左右ともに中央に配置する。");
+  L.push("- 余白：四辺に均等におよそ " + m + "% のセーフマージンを取り、ロゴが中央およそ " + (100 - 2*m) + "% を占めるようにする。");
+  L.push("- 背景：" + bgDescJa() + "。キャンバス全面で均一にし、質感・周辺減光・グラデーション・パターンを入れない。");
+  L.push("- ロゴ全体がキャンバス内に収まること。見切れ・裁ち落としは不可。");
+  L.push("- 輪郭はシャープに。ぼけ、ノイズ、圧縮劣化を出さないこと。");
+  L.push("");
+  L.push("## 元画像の情報");
+  if(brand) L.push("- ブランド名：" + brand);
+  L.push("- ロゴの種類：" + TYPE_JA[type]);
+  if(a){
+    L.push("- 元画像の実寸：" + a.w + "×" + a.h + "px（比率 " + a.ratio + "）");
+    L.push("- 元画像の背景：" + (a.bgTransparent ? "透過" : a.bgHex));
+    if(a.colors.length){
+      L.push("- 厳密に再現すべき色：" + a.colors.map(function(c){return c.hex;}).join("、"));
+    }
+  }
+  if(notes){
+    L.push("");
+    L.push("## 追加のブランド要件");
+    L.push(notes);
+  }
+  L.push("");
+  L.push("## 生成後の処理");
+  L.push("- 出力を 1200×1200px にリサイズし、5MB 未満の PNG として書き出すこと。");
+  L.push("- 元のロゴと重ね合わせ、形・字形・色がすべて一致しているか検証すること。差異があれば作り直すこと。");
+  return L.join("\n");
+}
+
+function renderPrompt(){
+  if(!S.img){
+    $("promptBox").textContent = "元画像をアップロードし、設定を入力するとプロンプトが生成されます。";
+    $("copyBtn").disabled = true;
+    return;
+  }
+  $("promptBox").textContent = (S.lang === "en") ? buildEn() : buildJa();
+  $("copyBtn").disabled = false;
+}
+
+/* ===================== 全体更新 ===================== */
+function update(){
+  if(S.img){ renderOutput(); }
+  renderPrompt();
+}
+
+/* ===================== ファイル読み込み ===================== */
+function loadFile(file){
+  if(!file) return;
+  if(!/^image\//.test(file.type)){
+    alert("画像ファイルを選択してください。");
+    return;
+  }
+  var url = URL.createObjectURL(file);
+  var img = new Image();
+  img.onload = function(){
+    S.img = img;
+    S.fileName = file.name + "（" + fmtBytes(file.size) + "）";
+    S.fileType = file.type;
+    S.analysis = analyze(img);
+    renderSource();
+    update();
+  };
+  img.onerror = function(){
+    URL.revokeObjectURL(url);
+    alert("この画像を読み込めませんでした。別の形式で書き出したファイルをお試しください。");
+  };
+  img.src = url;
+}
+
+/* ===================== イベント ===================== */
+var drop = $("drop"), fileInput = $("file");
+
+drop.addEventListener("click", function(){ fileInput.click(); });
+drop.addEventListener("keydown", function(e){
+  if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); }
+});
+fileInput.addEventListener("change", function(){ loadFile(fileInput.files[0]); });
+
+["dragenter","dragover"].forEach(function(ev){
+  drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("over"); });
+});
+["dragleave","drop"].forEach(function(ev){
+  drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("over"); });
+});
+drop.addEventListener("drop", function(e){
+  if(e.dataTransfer && e.dataTransfer.files.length){ loadFile(e.dataTransfer.files[0]); }
+});
+
+$("bgMode").addEventListener("change", function(){
+  $("bgColorRow").style.display = (this.value === "custom") ? "flex" : "none";
+  update();
+});
+$("bgColor").addEventListener("input", function(){
+  $("bgColorVal").textContent = this.value.toUpperCase();
+  update();
+});
+$("margin").addEventListener("input", function(){
+  $("marginVal").textContent = this.value + "%";
+  update();
+});
+["brand","logoType","fidelity","notes"].forEach(function(id){
+  $(id).addEventListener("input", renderPrompt);
+  $(id).addEventListener("change", renderPrompt);
+});
+
+function selectLang(lang){
+  S.lang = lang;
+  $("tab-en").setAttribute("aria-selected", String(lang === "en"));
+  $("tab-ja").setAttribute("aria-selected", String(lang === "ja"));
+  renderPrompt();
+}
+$("tab-en").addEventListener("click", function(){ selectLang("en"); });
+$("tab-ja").addEventListener("click", function(){ selectLang("ja"); });
+
+$("copyBtn").addEventListener("click", function(){
+  var text = $("promptBox").textContent;
+  var done = function(){
+    $("copied").classList.add("on");
+    setTimeout(function(){ $("copied").classList.remove("on"); }, 1600);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text, done); });
+  } else {
+    fallbackCopy(text, done);
+  }
+});
+function fallbackCopy(text, done){
+  var ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); done(); } catch(e){ alert("コピーできませんでした。手動で選択してコピーしてください。"); }
+  document.body.removeChild(ta);
+}
+
+$("dlBtn").addEventListener("click", function(){
+  var finish = function(blob){
+    if(!blob) return;
+    var brand = $("brand").value.trim().replace(/[\\/:*?"<>|\s]+/g, "-");
+    var name = "logo-1200x1200" + (brand ? "-" + brand : "") + ".png";
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  };
+  if(S.outBlob) finish(S.outBlob);
+  else $("outCanvas").toBlob(finish, "image/png");
+});
+
+})();
+</script>
+</body>
+</html>
