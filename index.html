@@ -256,6 +256,7 @@ function fmtBytes(n){
   if(n < 1024*1024) return (n/1024).toFixed(1) + " KB";
   return (n/1024/1024).toFixed(2) + " MB";
 }
+function isVector(){ return S.fileType === "image/svg+xml"; }
 function dist(a,b){
   var dr=a[0]-b[0], dg=a[1]-b[1], db=a[2]-b[2];
   return Math.sqrt(dr*dr+dg*dg+db*db);
@@ -377,7 +378,7 @@ function renderSource(){
     $("srcNotice").innerHTML = "";
     return;
   }
-  $("fSize").textContent = a.w + " × " + a.h + " px";
+  $("fSize").textContent = a.w + " × " + a.h + " px" + (isVector() ? "（ベクター）" : "");
   $("fRatio").textContent = a.ratio + (a.w === a.h ? "（正方形）" : "");
   $("fAlpha").textContent = a.hasAlpha ? "あり" : "なし（背景 " + a.bgHex + "）";
   $("fPad").textContent = a.bbox.full ? "判定不可" : "約 " + a.padPct + "%";
@@ -387,16 +388,17 @@ function renderSource(){
 
   var notes = [];
   var minSide = Math.min(a.w, a.h);
-  if(minSide < 144){
+  if(isVector()){
+    /* ベクターは描画時に出力解像度でラスタライズされるため、
+       intrinsic サイズが小さくても劣化しない。解像度警告は出さない。 */
+    notes.push(['info','SVG を読み込みました',
+      'ベクターのため、上に表示した実寸に関わらず 1200×1200px へ劣化なく書き出せます。ただし外部フォントを参照している SVG は字形が崩れることがあるため、書き出し結果を必ず目視で確認してください。']);
+  } else if(minSide < 144){
     notes.push(['warn','解像度が不足しています',
       '短辺 ' + minSide + 'px は、ロゴの最小要件 144×144px を下回ります。1200×1200 に引き伸ばすと必ず劣化します。より大きな元データ（できればSVGやAI形式）を用意してください。']);
   } else if(minSide < 600){
     notes.push(['warn','解像度に余裕がありません',
       '短辺 ' + minSide + 'px です。1200×1200 に拡大するとエッジが甘くなる可能性があります。等倍以上の元データが望ましいです。']);
-  }
-  if(S.fileType === "image/svg+xml"){
-    notes.push(['info','SVG を読み込みました',
-      'ベクターのため拡大しても劣化しません。ただし外部フォントを参照している SVG は字形が崩れることがあるため、書き出し結果を必ず目視で確認してください。']);
   }
   $("srcNotice").innerHTML = notes.map(function(nn){
     return '<div class="notice ' + nn[0] + '"><strong>' + nn[1] + '</strong>' + nn[2] + '</div>';
